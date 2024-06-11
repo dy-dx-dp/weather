@@ -2,6 +2,21 @@
 #define WIDGET_H
 
 #include <QWidget>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QUrl>
+#include <QDebug>
+#include <QMessageBox>
+#include<QPoint>
+#include <QMouseEvent>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonValue>
+#include <QMessageBox>
+#include "weatherday.h"
+#include "WeatherToPicture.h"
+#include "weathertool.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -14,8 +29,27 @@ class Widget : public QWidget
 public:
     Widget(QWidget *parent = nullptr);
     ~Widget();
+    QByteArray getReplyMessage( QNetworkReply *reply);
+    void getCityWeather(QString cityCode);
+    void parseJson(QByteArray json);
+    void setLeftTop(WeatherDay *today);
+    void setLeftBottom(WeatherDay *today);
+    void setRightTop(WeatherDay *today,WeatherDay *yesterday,WeatherDay *day[]);
+    QString airLevel(int aqi);
+
+protected:
+    void mousePressEvent(QMouseEvent *e) override;
+    void mouseMoveEvent(QMouseEvent *e) override;
 
 private:
     Ui::Widget *ui;
+    QPoint pOffset;
+    QNetworkAccessManager *manager;
+    QNetworkReply *reply;
+    WeatherDay *today;
+    WeatherDay *yesterday;
+    WeatherDay *day[4];
+    WeatherToPicTure data;     //天气对应的图片数据字典
+
 };
 #endif // WIDGET_H
