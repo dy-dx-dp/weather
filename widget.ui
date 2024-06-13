@@ -425,7 +425,7 @@ border-radius: 15px</string>
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>60</y>
+     <y>50</y>
      <width>421</width>
      <height>51</height>
     </rect>
@@ -681,7 +681,7 @@ border-top-right-radius: 0px;</string>
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>110</y>
+     <y>100</y>
      <width>421</width>
      <height>81</height>
     </rect>
@@ -925,7 +925,7 @@ border-top-right-radius: 0px;</string>
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>180</y>
+     <y>160</y>
      <width>421</width>
      <height>61</height>
     </rect>
@@ -1052,23 +1052,29 @@ padding:8px;</string>
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>250</y>
+     <y>210</y>
      <width>421</width>
-     <height>191</height>
+     <height>231</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+	background-color: rgba(60, 60, 60, 100);
+	border-radius: 4px;
+}</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_7">
     <item>
-     <widget class="QLabel" name="label_16">
+     <widget class="QLabel" name="label_lowCurve">
       <property name="text">
-       <string>图1</string>
+       <string/>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="label_17">
+     <widget class="QLabel" name="label_highCurve">
       <property name="text">
-       <string>图2</string>
+       <string/>
       </property>
      </widget>
     </item>

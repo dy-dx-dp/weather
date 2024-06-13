@@ -12,6 +12,16 @@ Widget::Widget(QWidget *parent)
         QPushButton:hover { background-color: rgba(169, 169, 169, 50) }
         QPushButton:pressed { background-color: rgba(255, 255, 255, 100); border-style: outset; }
     )");
+
+    //设置天蓝色背景
+    QPalette palette = this->palette();
+    palette.setColor(QPalette::Window, QColor(135, 206, 235));
+    this->setPalette(palette);
+
+    //设置事件过滤器
+    ui->label_highCurve->installEventFilter(this);
+    ui->label_lowCurve->installEventFilter(this);
+
     getCityWeather("101010100");
     connect(reply,&QNetworkReply::finished,this,[=](){
         QByteArray json  = this->getReplyMessage(reply);  //取得json格式的天气数据
@@ -148,6 +158,10 @@ void Widget::parseJson(QByteArray json)
         day[i-1]->ymd = forecastObj[i].toObject()["ymd"].toString();
         day[i-1]->aqi = forecastObj[i].toObject()["aqi"].toInt();
     }
+
+    //更新折线图信息
+    ui->label_highCurve->update();
+    ui->label_lowCurve->update();
 }
 
 void Widget::setLeftTop(WeatherDay *today)
@@ -211,12 +225,12 @@ QString Widget::airLevel(int aqi)  //空气质量转换
     switch(res){
         case 0:{return "优"; break;}
         case 1:{return "良好"; break;}
-        case 2:{return "轻度污染"; break;}
-        case 3:{return "中度污染"; break;}
-        case 4:{return "重度污染"; break;}
-        case 5:{return "重度污染"; break;}
-        default:{return "严重污染"; break;}
-    }
+        case 2:{return "轻度"; break;}
+        case 3:{return "中度"; break;}
+        case 4:{return "重度"; break;}
+        case 5:{return "重度"; break;}
+        default:{return "严重"; break;}
+        }
 }
 
 void Widget::mousePressEvent(QMouseEvent *e)
@@ -227,5 +241,138 @@ void Widget::mousePressEvent(QMouseEvent *e)
 void Widget::mouseMoveEvent(QMouseEvent *e)
 {
     move(e->globalPos()-pOffset);
+}
+
+bool Widget::eventFilter(QObject *watched, QEvent *event)
+{
+    if(watched == ui->label_highCurve && event->type() == QEvent::Paint ){
+        drawHighCurve();
+    }
+
+    if(watched == ui->label_lowCurve && event->type() == QEvent::Paint ){
+        drawLowCurve();
+    }
+
+    return QWidget::eventFilter(watched,event);
+}
+
+void Widget::drawHighCurve()
+{
+    QPainter painter(ui->label_highCurve);
+    QPen pen = painter.pen();
+    pen.setWidth(1);  //设置画笔宽度
+    pen.setColor(QColor(255,170,0)); //设置画笔颜色
+    painter.setPen(pen);
+    painter.setBrush(QColor(255,170,0));//设置画笔内部填充的颜色
+
+    //抗锯齿
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    /*正则表达式：(\\d+)
+    * \\d: 匹配一个数字字符。因为在 C++ 字符串中反斜杠需要转义，所以写成 \\d。
+    +: 表示前面的模式（即 \\d）重复一次或多次。因此，\\d+ 匹配一个或多个数字字符。
+    (): 圆括号是捕获组，用于提取匹配的子字符串。在这里，它捕获一个或多个数字字符。*/
+    QRegularExpression re("(\\d+)");
+    QString tem = yesterday->high;
+    QRegularExpressionMatch match = re.match(tem);
+    int yesterday_high = match.captured(1).toInt();
+    int today_high = re.match(today->high).captured(1).toInt();
+    int day_high[4] = {0};
+    for(int i = 0;i<4;i++){
+        day_high[i] = re.match(day[i]->high).captured(1).toInt();
+    }
+
+    //保存温度数组
+    int high[6] = {yesterday_high,today_high,day_high[0],
+                          day_high[1],day_high[2],day_high[3]};
+    int total = 0;
+    for(int i=0;i<6;i++){
+        total+=high[i];
+    }
+    int average = total/6;
+
+    //获取X坐标
+    int pointX[6];
+    for(int i = 0;i<6;i++){
+        pointX[i] = ui->label_day1->x()+i*70+ui->label_day1->width()/2;
+    }
+
+    //获取Y坐标
+    int pointY[6];
+    for(int i = 0; i < 6 ; i++){
+        pointY[i] = (ui->label_highCurve->height()/2 - ((high[i] - average)*3));
+    }
+
+    //画点
+    for(int i=0;i<6;i++){
+        qDebug()<<"最高温："<<high[i];
+        painter.drawEllipse(QPoint(pointX[i],pointY[i]),3,3);
+        painter.drawText(QPoint(pointX[i]-12,pointY[i]-12),QString::asprintf("%d°",high[i]));
+    }
+
+    //画折线
+    for(int i=0;i<5;i++){
+        painter.drawLine(QPoint(pointX[i],pointY[i]),QPoint(pointX[i+1],pointY[i+1]));
+    }
+
+}
+
+void Widget::drawLowCurve()
+{
+    QPainter painter(ui->label_lowCurve);
+    QPen pen = painter.pen();
+    pen.setWidth(1);  //设置画笔宽度
+    pen.setColor(QColor(0,255,255)); //设置画笔颜色
+    painter.setPen(pen);
+    painter.setBrush(QColor(0,255,255));//设置画笔内部填充的颜色
+
+    //抗锯齿
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    /*正则表达式：(\\d+)
+    * \\d: 匹配一个数字字符。因为在 C++ 字符串中反斜杠需要转义，所以写成 \\d。
+    +: 表示前面的模式（即 \\d）重复一次或多次。因此，\\d+ 匹配一个或多个数字字符。
+    (): 圆括号是捕获组，用于提取匹配的子字符串。在这里，它捕获一个或多个数字字符。*/
+    QRegularExpression re("(\\d+)");
+    QString tem = yesterday->low;
+    QRegularExpressionMatch match = re.match(tem);
+    int yesterday_low = match.captured(1).toInt();
+    int today_low = re.match(today->low).captured(1).toInt();
+    int day_low[4] = {0};
+    for(int i = 0;i<4;i++){
+        day_low[i] = re.match(day[i]->low).captured(1).toInt();
+    }
+
+    //保存温度数组
+    int low[6] = {yesterday_low,today_low,day_low[0],
+                   day_low[1],day_low[2],day_low[3]};
+    int total = 0;
+    for(int i=0;i<6;i++){
+        total+=low[i];
+    }
+    int average = total/6;
+
+    //获取X坐标
+    int pointX[6];
+    for(int i = 0;i<6;i++){
+        pointX[i] = ui->label_day1->x()+i*70+ui->label_day1->width()/2;
+    }
+
+    //获取Y坐标
+    int pointY[6];
+    for(int i = 0; i < 6 ; i++){
+        pointY[i] = (ui->label_lowCurve->height()/2 - ((low[i] - average)*3));
+    }
+
+    //画点
+    for(int i=0;i<6;i++){
+            painter.drawEllipse(QPoint(pointX[i],pointY[i]),3,3);
+        painter.drawText(QPoint(pointX[i]-12,pointY[i]-12),QString::asprintf("%d°",low[i]));
+    }
+
+    //画折线
+    for(int i=0;i<5;i++){
+        painter.drawLine(QPoint(pointX[i],pointY[i]),QPoint(pointX[i+1],pointY[i+1]));
+    }
 }
 

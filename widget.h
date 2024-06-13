@@ -14,6 +14,7 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QMessageBox>
+#include <QPainter>
 #include "weatherday.h"
 #include "WeatherToPicture.h"
 #include "weathertool.h"
@@ -36,10 +37,13 @@ public:
     void setLeftBottom(WeatherDay *today);
     void setRightTop(WeatherDay *today,WeatherDay *yesterday,WeatherDay *day[]);
     QString airLevel(int aqi);
+    void drawHighCurve();
+    void drawLowCurve();
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;
     void mouseMoveEvent(QMouseEvent *e) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     Ui::Widget *ui;
